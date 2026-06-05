@@ -1,0 +1,18 @@
+{
+  "app_title": "BM4088 ICA1 SAQ Marking Assistant",
+  "sidebar_header": "BM4088 ICA1",
+  "buttons": [
+    {"id": "Q1VA", "label": "Q1VA: Problem Statement — Variant A", "marks": 5},
+    {"id": "Q1VB", "label": "Q1VB: Problem Statement — Variant B", "marks": 5},
+    {"id": "Q1VC", "label": "Q1VC: Problem Statement — Variant C", "marks": 5},
+    {"id": "Q2VA", "label": "Q2VA: EDA — Monthly Revenue Trend", "marks": 5},
+    {"id": "Q2VB", "label": "Q2VB: EDA — Returns by Category", "marks": 5},
+    {"id": "Q2VC", "label": "Q2VC: EDA — Satisfaction Distribution", "marks": 5},
+    {"id": "Q3VA", "label": "Q3VA: Data Prep — Revenue Nulls", "marks": 5},
+    {"id": "Q3VB", "label": "Q3VB: Data Prep — Satisfaction Nulls", "marks": 5},
+    {"id": "Q3VC", "label": "Q3VC: Data Prep — Duplicate IDs", "marks": 5},
+    {"id": "Q4VA", "label": "Q4VA: Visualisation — Promo vs Rating", "marks": 10},
+    {"id": "Q4VB", "label": "Q4VB: Visualisation — Footfall vs Revenue", "marks": 10},
+    {"id": "Q4VC", "label": "Q4VC: Visualisation — Region vs Revenue", "marks": 10}
+  ]
+}

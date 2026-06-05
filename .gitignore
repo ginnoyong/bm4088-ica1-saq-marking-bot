@@ -1,0 +1,7 @@
+.streamlit/secrets.toml
+__pycache__/
+*.pyc
+venv/
+bm4088-marking-bot-*.json
+.claude/
+2.0.0
