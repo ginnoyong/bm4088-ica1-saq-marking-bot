@@ -166,6 +166,17 @@ def main():
     # Main area
     st.title(APP_TITLE)
 
+    # Let Ctrl+C / Cmd+C fall through to the browser's native copy when text is highlighted
+    st.markdown("""
+        <script>
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
+                e.stopPropagation();
+            }
+        }, true);
+        </script>
+    """, unsafe_allow_html=True)
+
     # Chat history
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
