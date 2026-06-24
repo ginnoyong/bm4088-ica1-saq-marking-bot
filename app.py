@@ -97,7 +97,7 @@ def render_usage_metrics(usage: dict) -> None:
     hit = read > 0
     cache_color = "#2d8a4e" if hit else "#c0392b"
     st.markdown(
-        f'<div style="position:fixed;bottom:0;left:0;right:0;'
+        f'<div id="metrics-bar" style="position:fixed;bottom:0;left:0;right:0;'
         f'background:#0e1117;border-top:1px solid #2d3035;'
         f'padding:5px 1.5rem;font-size:0.75rem;color:#888;z-index:9999;">'
         f'Last request &mdash; '
@@ -290,6 +290,18 @@ def main():
             if (p._btnColorObserver) p._btnColorObserver.disconnect();
             p._btnColorObserver = new p.MutationObserver(colorButtons);
             p._btnColorObserver.observe(p.document.body, {childList: true, subtree: true});
+
+            // Align metrics bar with the main content area (right of sidebar)
+            function positionMetricsBar() {
+                var bar = p.document.getElementById('metrics-bar');
+                if (!bar) return;
+                var sidebar = p.document.querySelector('[data-testid="stSidebar"]');
+                bar.style.left = (sidebar ? sidebar.offsetWidth : 0) + 'px';
+            }
+            positionMetricsBar();
+            if (p._metricsBarObserver) p._metricsBarObserver.disconnect();
+            p._metricsBarObserver = new p.MutationObserver(positionMetricsBar);
+            p._metricsBarObserver.observe(p.document.body, {attributes: true, childList: true, subtree: true});
         })();
         </script>
     """, height=1)
