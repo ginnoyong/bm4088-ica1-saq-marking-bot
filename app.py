@@ -77,31 +77,36 @@ def call_api(messages: list) -> tuple:
         }],
         messages=api_messages,
     )
-    return response.content[0].text, response.usage
+    u = response.usage
+    return response.content[0].text, {
+        "cache_read_input_tokens":    getattr(u, "cache_read_input_tokens",    0) or 0,
+        "cache_creation_input_tokens": getattr(u, "cache_creation_input_tokens", 0) or 0,
+        "input_tokens":               getattr(u, "input_tokens",               0) or 0,
+        "output_tokens":              getattr(u, "output_tokens",              0) or 0,
+    }
 
 
-def render_usage_metrics(usage) -> None:
-    read  = getattr(usage, "cache_read_input_tokens",    0) or 0
-    write = getattr(usage, "cache_creation_input_tokens", 0) or 0
-    inp   = getattr(usage, "input_tokens",               0) or 0
-    out   = getattr(usage, "output_tokens",              0) or 0
+def render_usage_metrics(usage: dict) -> None:
+    read  = usage.get("cache_read_input_tokens", 0)
+    write = usage.get("cache_creation_input_tokens", 0)
+    inp   = usage.get("input_tokens", 0)
+    out   = usage.get("output_tokens", 0)
     total = read + write + inp + out
     cost_usd = (inp * 3.00 + write * 3.75 + read * 0.30 + out * 15.00) / 1_000_000
     cost_sgd = cost_usd * 1.32
     hit = read > 0
-    cache_span = (
-        f'<span style="color:#2d8a4e">Hit</span>'
-        if hit else
-        f'<span style="color:#c0392b">Miss</span>'
-    )
+    cache_color = "#2d8a4e" if hit else "#c0392b"
     st.markdown(
-        f'<p style="font-size:0.75rem;color:#888;margin:2px 0 6px 0">'
-        f'Cache: {cache_span} &nbsp;|&nbsp; '
-        f'Read: {read:,} &nbsp;|&nbsp; '
-        f'Write: {write:,} &nbsp;|&nbsp; '
-        f'Total tokens: {total:,} &nbsp;|&nbsp; '
-        f'Est. cost: SGD&nbsp;{cost_sgd:.4f}'
-        f'</p>',
+        f'<div style="position:fixed;bottom:0;left:0;right:0;'
+        f'background:#0e1117;border-top:1px solid #2d3035;'
+        f'padding:5px 1.5rem;font-size:0.75rem;color:#888;z-index:9999;">'
+        f'Last request &mdash; '
+        f'Cache: <span style="color:{cache_color}">{"Hit" if hit else "Miss"}</span>'
+        f' &nbsp;|&nbsp; Read: {read:,}'
+        f' &nbsp;|&nbsp; Write: {write:,}'
+        f' &nbsp;|&nbsp; Total tokens: {total:,}'
+        f' &nbsp;|&nbsp; Est. cost: SGD&nbsp;{cost_sgd:.4f}'
+        f'</div>',
         unsafe_allow_html=True,
     )
 
@@ -172,6 +177,8 @@ def main():
         st.session_state.uploader_key = 0
     if "input_key" not in st.session_state:
         st.session_state.input_key = 0
+    if "last_usage" not in st.session_state:
+        st.session_state.last_usage = None
 
     # Sidebar
     with st.sidebar:
@@ -210,8 +217,6 @@ def main():
     # Chat history
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
-            if msg["role"] == "assistant" and msg.get("usage") is not None:
-                render_usage_metrics(msg["usage"])
             render_message_content(msg["content"])
 
     # Input area
@@ -354,6 +359,7 @@ def main():
             with st.spinner("Marking..."):
                 try:
                     response_text, usage = call_api(st.session_state.messages)
+                    st.session_state.last_usage = usage
                     log_to_sheets(
                         st.session_state.get("current_marker", "unknown"),
                         selected_q,
@@ -362,19 +368,19 @@ def main():
                     )
                 except Exception as e:
                     response_text = f"Error contacting the API: {e}"
-                    usage = None
-            if usage is not None:
-                render_usage_metrics(usage)
             st.markdown(response_text)
 
         st.session_state.messages.append(
-            {"role": "assistant", "content": response_text, "usage": usage}
+            {"role": "assistant", "content": response_text}
         )
 
         # Reset input widgets for next submission
         st.session_state.uploader_key += 1
         st.session_state.input_key += 1
         st.rerun()
+
+    if st.session_state.last_usage is not None:
+        render_usage_metrics(st.session_state.last_usage)
 
 
 if __name__ == "__main__":
