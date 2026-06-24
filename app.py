@@ -63,7 +63,7 @@ def render_message_content(content):
                 st.image(img_bytes)
 
 
-def call_api(messages: list) -> str:
+def call_api(messages: list) -> tuple:
     client = anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
     api_messages = [{"role": m["role"], "content": m["content"]} for m in messages]
     response = client.messages.create(
@@ -77,7 +77,33 @@ def call_api(messages: list) -> str:
         }],
         messages=api_messages,
     )
-    return response.content[0].text
+    return response.content[0].text, response.usage
+
+
+def render_usage_metrics(usage) -> None:
+    read  = getattr(usage, "cache_read_input_tokens",    0) or 0
+    write = getattr(usage, "cache_creation_input_tokens", 0) or 0
+    inp   = getattr(usage, "input_tokens",               0) or 0
+    out   = getattr(usage, "output_tokens",              0) or 0
+    total = read + write + inp + out
+    cost_usd = (inp * 3.00 + write * 3.75 + read * 0.30 + out * 15.00) / 1_000_000
+    cost_sgd = cost_usd * 1.32
+    hit = read > 0
+    cache_span = (
+        f'<span style="color:#2d8a4e">Hit</span>'
+        if hit else
+        f'<span style="color:#c0392b">Miss</span>'
+    )
+    st.markdown(
+        f'<p style="font-size:0.75rem;color:#888;margin:2px 0 6px 0">'
+        f'Cache: {cache_span} &nbsp;|&nbsp; '
+        f'Read: {read:,} &nbsp;|&nbsp; '
+        f'Write: {write:,} &nbsp;|&nbsp; '
+        f'Total tokens: {total:,} &nbsp;|&nbsp; '
+        f'Est. cost: SGD&nbsp;{cost_sgd:.4f}'
+        f'</p>',
+        unsafe_allow_html=True,
+    )
 
 
 def log_to_sheets(marker: str, question: str, has_image: bool, response_text: str):
@@ -325,7 +351,7 @@ def main():
         with st.chat_message("assistant"):
             with st.spinner("Marking..."):
                 try:
-                    response_text = call_api(st.session_state.messages)
+                    response_text, usage = call_api(st.session_state.messages)
                     log_to_sheets(
                         st.session_state.get("current_marker", "unknown"),
                         selected_q,
@@ -334,6 +360,9 @@ def main():
                     )
                 except Exception as e:
                     response_text = f"Error contacting the API: {e}"
+                    usage = None
+            if usage is not None:
+                render_usage_metrics(usage)
             st.markdown(response_text)
 
         st.session_state.messages.append(
