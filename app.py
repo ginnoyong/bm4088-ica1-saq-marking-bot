@@ -70,7 +70,11 @@ def call_api(messages: list) -> str:
         model="claude-sonnet-4-6",
         max_tokens=1024,
         temperature=0,
-        system=SYSTEM_PROMPT,
+        system=[{
+            "type": "text",
+            "text": SYSTEM_PROMPT,
+            "cache_control": {"type": "ephemeral"},
+        }],
         messages=api_messages,
     )
     return response.content[0].text
