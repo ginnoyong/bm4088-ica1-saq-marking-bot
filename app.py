@@ -210,6 +210,8 @@ def main():
     # Chat history
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
+            if msg["role"] == "assistant" and msg.get("usage") is not None:
+                render_usage_metrics(msg["usage"])
             render_message_content(msg["content"])
 
     # Input area
@@ -366,7 +368,7 @@ def main():
             st.markdown(response_text)
 
         st.session_state.messages.append(
-            {"role": "assistant", "content": response_text}
+            {"role": "assistant", "content": response_text, "usage": usage}
         )
 
         # Reset input widgets for next submission
